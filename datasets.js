@@ -8,49 +8,46 @@ app.listen(3400, ()=>{
     console.log("Sever is now listening at port 3400");
 })
 
-client.connect();
 
-/*
-app.get('/v1/datasets/:id', (req, res)=>{
-    client.query(`SELECT * FROM datasets where id='${req.params.id}';`, (err, result)=>{
-        if(!err){
-            res.send(result.rows);
-        }
-    });
-    client.end;
-})
-*/
-
-/*
-app.get('/v1/datasets/:id', (req, res) => {
-    const id = req.params.id; 
-    const query = 'SELECT * FROM datasets WHERE id = $1;'; 
-
-    client.query(query, [id], (err, result) => {
-        if (!err) {
-            res.send(result.rows);
-        } else {
-            console.error(err.message);
-            res.send('Error occurred while fetching dataset');
-        }
-    });
-});
-*/
 
 app.get('/v1/datasets/:id', (req, res) => {
-    const id = req.params.id; 
-    const query = 'SELECT * FROM datasets WHERE id = $1;'; 
+    const id = req.params.id;
+    const query = 'SELECT * FROM datasets WHERE id = $1;';
 
     client.query(query, [id], (err, result) => {
         if (!err) {
             if (result.rows.length === 0) {
-                res.status(404).send('Data not found');
+                const errorResponse = {
+                    id: "api.dataset.read",
+                    ver: "1.0",
+                    ts: new Date(),
+                    params: {
+                        err: "DATASET_NOT_FOUND",
+                        status: "Failed",
+                        errmsg: "No records found"
+                    },
+                    responseCode: "NOT_FOUND",
+                    result: {}
+                };
+                res.status(404).send(errorResponse);
             } else {
                 res.send(result.rows);
             }
         } else {
             console.error(err.message);
-            res.send('Error occurred while fetching dataset');
+            const errorResponse = {
+                id: "api.dataset.read",
+                ver: "1.0",
+                ts: new Date(),
+                params: {
+                    err: "DATABASE_ERROR",
+                    status: "Failed",
+                    errmsg: err.message
+                },
+                responseCode: "INTERNAL_SERVER_ERROR",
+                result: {}
+            };
+            res.status(500).send(errorResponse);
         }
     });
 });
@@ -69,6 +66,11 @@ app.get('/v1/datasets', (req, res)=>{
 })
 
 
+
+
+
+
+
 app.post('/v1/datasets', (req, res) => {
     const datasetData = req.body;
 
@@ -84,7 +86,18 @@ app.post('/v1/datasets', (req, res) => {
     }
 
     if (missingFields.length > 0) {
-        return res.status(400).send(`Please provide values for the following required fields: ${missingFields.join(', ')}`);
+        return res.status(400).send({
+            "id": "api.dataset.create",
+            "ver": "1.0",
+            "ts": new Date(),
+            "params": {
+                "err": "Missing fields",
+                "status": "unsuccessful",
+                "errmsg": `Please provide values for the following required fields: ${missingFields.join(', ')}`
+            },
+            "responseCode": "BAD REQUEST",
+            "result": null
+        });
     }
 
     const insertQuery = `INSERT INTO datasets (id, dataset_id, type, name, validation_config, extraction_config, 
@@ -116,23 +129,60 @@ app.post('/v1/datasets', (req, res) => {
 
     client.query(insertQuery, values, (err, result) => {
         if (!err) {
-            res.send('Insertion was successful');
+            res.send({
+                "id": "api.dataset.create",
+                "ver": "1.0",
+                "ts": new Date(),
+                "params": {
+                    "err": null,
+                    "status": "successful",
+                    "errmsg": null
+                },
+                "responseCode": "OK",
+                "result": {
+                    "id": datasetData.id
+                }
+            });
         } else {
             console.error(err.message);
-            res.send(err.message);
-           // res.send('Error occurred during insertion');
+            res.status(500).send({
+                "id": "api.dataset.create",
+                "ver": "1.0",
+                "ts": new Date(),
+                "params": {
+                    "err": "Database Error",
+                    "status": "unsuccessful",
+                    "errmsg": err.message
+                },
+                "responseCode": "INTERNAL_SERVER_ERROR",
+                "result": null
+            });
         }
     });
 });
 
-//console.log(new Date());
 
-app.put('/v1/datasets/:id', (req, res) => {
+
+
+
+
+app.patch('/v1/datasets/:id', (req, res) => {
     //const newid = req.params.dataset_id;
-    //const id = req.params.id;
+    const id = req.params.id;
     const updatedFields = req.body;
     if (Object.keys(updatedFields).length === 0) {
-        return res.send('Please provide at least one field to update');
+        return res.status(400).send({
+            "id": "api.dataset.update",
+            "ver": "1.0",
+            "ts": new Date(),
+            "params": {
+                "err": "invalid_request",
+                "status": "unsuccessful",
+                "errmsg": `Please provide atleast one field to update`
+            },
+            "responseCode": "BAD REQUEST",
+            "result": null
+        });
     }
 
     let setClause = '';
@@ -148,21 +198,57 @@ app.put('/v1/datasets/:id', (req, res) => {
     const updateQuery = `UPDATE datasets SET ${setClause} WHERE id='${req.params.id}';`;
     client.query(updateQuery, values, (err, result) => {
         if (!err) {
-            res.send('Update was successful');
+            res.send({
+                "id": "api.dataset.update",
+                "ver": "1.0",
+                "ts": new Date(),
+                "params": {
+                    "err": null,
+                    "status": "successful",
+                    "errmsg": null
+                },
+                "responseCode": "OK",
+                "result": {
+                    "id": id
+                }
+            });
         } else {
             console.error(err.message);
-            res.send('Error occurred during update');
+            res.status(500).send({
+                "id": "api.dataset.update",
+                "ver": "1.0",
+                "ts": new Date(),
+                "params": {
+                    "err": "Database Error",
+                    "status": "unsuccessful",
+                    "errmsg": err.message
+                },
+                "responseCode": "INTERNAL_SERVER_ERROR",
+                "result": null
+            });
         }
     });
 });
 
 
 
-app.patch('/v1/datasets/:id', (req, res) => {
+app.put('/v1/datasets/:id', (req, res) => {
+    //const newid = req.params.dataset_id;
+    const id = req.params.id;
     const updatedFields = req.body;
-    const id=req.params.id;
     if (Object.keys(updatedFields).length === 0) {
-        return res.send('Please provide at least one field to update');
+        return res.status(400).send({
+            "id": "api.dataset.update",
+            "ver": "1.0",
+            "ts": new Date(),
+            "params": {
+                "err": "invalid_request",
+                "status": "unsuccessful",
+                "errmsg": `Please provide atleast one field to update`
+            },
+            "responseCode": "BAD REQUEST",
+            "result": null
+        });
     }
 
     let setClause = '';
@@ -175,14 +261,37 @@ app.patch('/v1/datasets/:id', (req, res) => {
         values.push(updatedFields[key]);
     });
 
-    const updateQuery = `UPDATE datasets SET ${setClause} WHERE id = '${id}';`;
-
+    const updateQuery = `UPDATE datasets SET ${setClause} WHERE id='${req.params.id}';`;
     client.query(updateQuery, values, (err, result) => {
         if (!err) {
-            res.send('Update was successful');
+            res.send({
+                "id": "api.dataset.update",
+                "ver": "1.0",
+                "ts": new Date(),
+                "params": {
+                    "err": null,
+                    "status": "successful",
+                    "errmsg": null
+                },
+                "responseCode": "OK",
+                "result": {
+                    "id": id
+                }
+            });
         } else {
             console.error(err.message);
-            res.send('Error occurred during update');
+            res.status(500).send({
+                "id": "api.dataset.update",
+                "ver": "1.0",
+                "ts": new Date(),
+                "params": {
+                    "err": "Database Error",
+                    "status": "unsuccessful",
+                    "errmsg": err.message
+                },
+                "responseCode": "INTERNAL_SERVER_ERROR",
+                "result": null
+            });
         }
     });
 });
