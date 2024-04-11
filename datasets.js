@@ -196,10 +196,35 @@ app.delete('/v1/datasets/:id', (req, res) => {
 
     client.query(deleteQuery, (err, result) => {
         if (!err) {
-            res.send('Deletion was successful');
+            res.send({
+                "id": "api.dataset.delete",
+                "ver": "1.0",
+                "ts": new Date(),
+                "params": {
+                    "err": null,
+                    "status": "successful",
+                    "errmsg": null
+
+                },
+                "responseCode": "OK",
+                "result": {
+                    "id": datasetsId
+                }
+            });
         } else {
-            console.error(err.message);
-            res.send('Error occurred during deletion');
+            //console.error(err.message);
+            res.status(500).send({
+                "id": "api.dataset.delete",
+                "ver": "1.0",
+                "ts": new Date(),
+                "params": {
+                    "err": "Database Error",
+                    "status": "unsuccessful",
+                    "errmsg": err.message
+                },
+                "responseCode": "INTERNAL_SERVER_ERROR",
+                "result": null
+            });
         }
     });
 });
