@@ -163,13 +163,10 @@ app.post('/v1/datasets', (req, res) => {
 
 
 
-
-
-
 app.patch('/v1/datasets/:id', (req, res) => {
-    //const newid = req.params.dataset_id;
     const id = req.params.id;
     const updatedFields = req.body;
+
     if (Object.keys(updatedFields).length === 0) {
         return res.status(400).send({
             "id": "api.dataset.update",
@@ -178,7 +175,7 @@ app.patch('/v1/datasets/:id', (req, res) => {
             "params": {
                 "err": "invalid_request",
                 "status": "unsuccessful",
-                "errmsg": `Please provide atleast one field to update`
+                "errmsg": `Please provide at least one field to update`
             },
             "responseCode": "BAD REQUEST",
             "result": null
@@ -196,22 +193,40 @@ app.patch('/v1/datasets/:id', (req, res) => {
     });
 
     const updateQuery = `UPDATE datasets SET ${setClause} WHERE id='${req.params.id}';`;
+    
+
     client.query(updateQuery, values, (err, result) => {
         if (!err) {
-            res.send({
-                "id": "api.dataset.update",
-                "ver": "1.0",
-                "ts": new Date(),
-                "params": {
-                    "err": null,
-                    "status": "successful",
-                    "errmsg": null
-                },
-                "responseCode": "OK",
-                "result": {
-                    "id": id
-                }
-            });
+            //console.log(result)
+            if (result.rowCount === 0) {
+                res.status(404).send({
+                    "id": "api.dataset.update",
+                    "ver": "1.0",
+                    "ts": new Date(),
+                    "params": {
+                        "err": "Dataset Not Found",
+                        "status": "unsuccessful",
+                        "errmsg": `Dataset with ID ${id} not found.`
+                    },
+                    "responseCode": "NOT_FOUND",
+                    "result": null
+                });
+            } else {
+                res.send({
+                    "id": "api.dataset.update",
+                    "ver": "1.0",
+                    "ts": new Date(),
+                    "params": {
+                        "err": null,
+                        "status": "successful",
+                        "errmsg": null
+                    },
+                    "responseCode": "OK",
+                    "result": {
+                        "id": id
+                    }
+                });
+            }
         } else {
             console.error(err.message);
             res.status(500).send({
@@ -229,13 +244,18 @@ app.patch('/v1/datasets/:id', (req, res) => {
         }
     });
 });
+
+
+
+
+
 
 
 
 app.put('/v1/datasets/:id', (req, res) => {
-    //const newid = req.params.dataset_id;
     const id = req.params.id;
     const updatedFields = req.body;
+
     if (Object.keys(updatedFields).length === 0) {
         return res.status(400).send({
             "id": "api.dataset.update",
@@ -244,7 +264,7 @@ app.put('/v1/datasets/:id', (req, res) => {
             "params": {
                 "err": "invalid_request",
                 "status": "unsuccessful",
-                "errmsg": `Please provide atleast one field to update`
+                "errmsg": `Please provide all fields to update`
             },
             "responseCode": "BAD REQUEST",
             "result": null
@@ -262,23 +282,44 @@ app.put('/v1/datasets/:id', (req, res) => {
     });
 
     const updateQuery = `UPDATE datasets SET ${setClause} WHERE id='${req.params.id}';`;
+    
+
     client.query(updateQuery, values, (err, result) => {
         if (!err) {
-            res.send({
-                "id": "api.dataset.update",
-                "ver": "1.0",
-                "ts": new Date(),
-                "params": {
-                    "err": null,
-                    "status": "successful",
-                    "errmsg": null
-                },
-                "responseCode": "OK",
-                "result": {
-                    "id": id
-                }
-            });
+            //console.log(result.rowCount);
+            //console.log(result.rows.length);
+            //console.log(result)
+            if (result.rowCount == 0) {
+                res.status(404).send({
+                    "id": "api.dataset.update",
+                    "ver": "1.0",
+                    "ts": new Date(),
+                    "params": {
+                        "err": "Dataset Not Found",
+                        "status": "unsuccessful",
+                        "errmsg": `Dataset with ID ${id} not found.`
+                    },
+                    "responseCode": "NOT_FOUND",
+                    "result": null
+                });
+            } else {
+                res.send({
+                    "id": "api.dataset.update",
+                    "ver": "1.0",
+                    "ts": new Date(),
+                    "params": {
+                        "err": null,
+                        "status": "successful",
+                        "errmsg": null
+                    },
+                    "responseCode": "OK",
+                    "result": {
+                        "id": id
+                    }
+                });
+            }
         } else {
+           
             console.error(err.message);
             res.status(500).send({
                 "id": "api.dataset.update",
@@ -295,6 +336,7 @@ app.put('/v1/datasets/:id', (req, res) => {
         }
     });
 });
+
 
 
 
@@ -305,23 +347,40 @@ app.delete('/v1/datasets/:id', (req, res) => {
 
     client.query(deleteQuery, (err, result) => {
         if (!err) {
-            res.send({
-                "id": "api.dataset.delete",
-                "ver": "1.0",
-                "ts": new Date(),
-                "params": {
-                    "err": null,
-                    "status": "successful",
-                    "errmsg": null
+            //console.log(result.rowCount);
+            //console.log(result.rows.length);
 
-                },
-                "responseCode": "OK",
-                "result": {
-                    "id": datasetsId
-                }
-            });
+            if (result.rowCount === 0) {
+               
+                res.status(404).send({
+                    "id": "api.dataset.delete",
+                    "ver": "1.0",
+                    "ts": new Date(),
+                    "params": {
+                        "err": "Dataset Not Found",
+                        "status": "unsuccessful",
+                        "errmsg": `Dataset with ID ${datasetsId} not found to delete.`
+                    },
+                    "responseCode": "NOT_FOUND",
+                    "result": null
+                });
+            } else {
+                res.send({
+                    "id": "api.dataset.delete",
+                    "ver": "1.0",
+                    "ts": new Date(),
+                    "params": {
+                        "err": null,
+                        "status": "successful",
+                        "errmsg": null
+                    },
+                    "responseCode": "OK",
+                    "result": {
+                        "id": datasetsId
+                    }
+                });
+            }
         } else {
-            //console.error(err.message);
             res.status(500).send({
                 "id": "api.dataset.delete",
                 "ver": "1.0",
